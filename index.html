@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro de personas</title>
+  <style>
+    :root {
+      --fondo: #f5f7f6;
+      --tarjeta: #ffffff;
+      --texto: #1c2a26;
+      --suave: #5b6b66;
+      --borde: #cfd8d4;
+      --acento: #1f6f5c;
+      --error: #b3261e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main {
+      width: 100%;
+      max-width: 400px;
+      background: var(--tarjeta);
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      padding: 28px;
+    }
+    h1 { margin: 0 0 20px; font-size: 1.4rem; }
+    label { display: block; margin-bottom: 16px; font-size: .9rem; color: var(--suave); }
+    input {
+      display: block;
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--texto);
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+    }
+    input:focus-visible, button:focus-visible {
+      outline: 2px solid var(--acento);
+      outline-offset: 2px;
+    }
+    button {
+      width: 100%;
+      padding: 11px;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--acento);
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .6; cursor: wait; }
+    #mensaje { min-height: 1.4em; margin: 14px 0 0; font-size: .9rem; }
+    #mensaje.ok { color: var(--acento); }
+    #mensaje.error { color: var(--error); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Registrar persona</h1>
+
+    <form id="formulario">
+      <label>Cédula
+        <input id="cedula" name="cedula" required autocomplete="off">
+      </label>
+      <label>Nombre
+        <input id="nombre" name="nombre" required autocomplete="off">
+      </label>
+      <label>Apellido
+        <input id="apellido" name="apellido" required autocomplete="off">
+      </label>
+      <button id="guardar" type="submit">Guardar persona</button>
+    </form>
+
+    <p id="mensaje" role="status"></p>
+  </main>
+
+  <!-- Librería de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // 1. Pega aquí los datos de tu proyecto (Project Settings > API)
+    const SUPABASE_URL = "https://iosknxdlemdlrsvglwhc.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_0xkrUDuvP7R9BuXWaaZzsA_kh9RfBuu";
+
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const formulario = document.getElementById("formulario");
+    const boton = document.getElementById("guardar");
+    const mensaje = document.getElementById("mensaje");
+
+    function mostrar(texto, tipo) {
+      mensaje.textContent = texto;
+      mensaje.className = tipo;
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      boton.disabled = true;
+      mostrar("Guardando...", "");
+
+      const persona = {
+        cedula: document.getElementById("cedula").value.trim(),
+        nombre: document.getElementById("nombre").value.trim(),
+        apellido: document.getElementById("apellido").value.trim(),
+      };
+
+      const { error } = await db.from("persona").insert(persona);
+
+      if (error) {
+        mostrar("No se pudo guardar: " + error.message, "error");
+      } else {
+        mostrar("Persona guardada.", "ok");
+        formulario.reset();
+        document.getElementById("cedula").focus();
+      }
+      boton.disabled = false;
+    });
+  </script>
+</body>
+</html>
