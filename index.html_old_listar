@@ -29,7 +29,7 @@
     }
     main, section {
       width: 100%;
-      max-width: 480px;
+      max-width: 420px;
       background: var(--tarjeta);
       border: 1px solid var(--borde);
       border-radius: 10px;
@@ -53,6 +53,7 @@
       outline-offset: 2px;
     }
     button {
+      width: 100%;
       padding: 11px;
       font: inherit;
       font-weight: 600;
@@ -63,34 +64,21 @@
       cursor: pointer;
     }
     button:disabled { opacity: .6; cursor: wait; }
-    #formulario button { width: 100%; }
-    .fila-botones { display: flex; gap: 10px; margin-top: 6px; }
-    .fila-botones button { flex: 1; }
-    #cancelar { background: var(--suave); }
-
     #mensaje { min-height: 1.4em; margin: 14px 0 0; font-size: .9rem; }
     #mensaje.ok { color: var(--acento); }
     #mensaje.error { color: var(--error); }
 
-    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
     th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--borde); }
     th { color: var(--suave); font-weight: 600; }
-    td button {
-      padding: 5px 9px;
-      font-size: .8rem;
-      margin-right: 4px;
-      background: var(--acento);
-    }
-    td button.eliminar { background: var(--error); }
     #listaEstado { font-size: .85rem; color: var(--suave); margin-top: 10px; }
   </style>
 </head>
 <body>
   <main>
-    <h1 id="tituloFormulario">Registrar persona</h1>
+    <h1>Registrar persona</h1>
 
     <form id="formulario">
-      <input type="hidden" id="idEditar" value="">
       <label>Cédula
         <input id="cedula" name="cedula" required autocomplete="off">
       </label>
@@ -100,10 +88,7 @@
       <label>Apellido
         <input id="apellido" name="apellido" required autocomplete="off">
       </label>
-      <div class="fila-botones">
-        <button id="guardar" type="submit">Guardar persona</button>
-        <button id="cancelar" type="button" style="display:none">Cancelar</button>
-      </div>
+      <button id="guardar" type="submit">Guardar persona</button>
     </form>
 
     <p id="mensaje" role="status"></p>
@@ -113,7 +98,7 @@
     <h2>Personas guardadas</h2>
     <table>
       <thead>
-        <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Apellido</th><th></th></tr>
+        <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Apellido</th></tr>
       </thead>
       <tbody id="cuerpoTabla"></tbody>
     </table>
@@ -131,27 +116,13 @@
 
     const formulario = document.getElementById("formulario");
     const boton = document.getElementById("guardar");
-    const botonCancelar = document.getElementById("cancelar");
-    const titulo = document.getElementById("tituloFormulario");
     const mensaje = document.getElementById("mensaje");
     const cuerpoTabla = document.getElementById("cuerpoTabla");
     const listaEstado = document.getElementById("listaEstado");
-    const idEditar = document.getElementById("idEditar");
-    const campoCedula = document.getElementById("cedula");
-    const campoNombre = document.getElementById("nombre");
-    const campoApellido = document.getElementById("apellido");
 
     function mostrar(texto, tipo) {
       mensaje.textContent = texto;
       mensaje.className = tipo;
-    }
-
-    function limpiarFormulario() {
-      formulario.reset();
-      idEditar.value = "";
-      titulo.textContent = "Registrar persona";
-      boton.textContent = "Guardar persona";
-      botonCancelar.style.display = "none";
     }
 
     async function cargarPersonas() {
@@ -169,15 +140,7 @@
       cuerpoTabla.innerHTML = "";
       data.forEach((p) => {
         const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${p.id}</td>
-          <td>${p.cedula}</td>
-          <td>${p.nombre}</td>
-          <td>${p.apellido}</td>
-          <td>
-            <button type="button" class="editar" data-id="${p.id}" data-cedula="${p.cedula}" data-nombre="${p.nombre}" data-apellido="${p.apellido}">Editar</button>
-            <button type="button" class="eliminar" data-id="${p.id}">Eliminar</button>
-          </td>`;
+        fila.innerHTML = `<td>${p.id}</td><td>${p.cedula}</td><td>${p.nombre}</td><td>${p.apellido}</td>`;
         cuerpoTabla.appendChild(fila);
       });
 
@@ -189,65 +152,25 @@
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
       boton.disabled = true;
+      mostrar("Guardando...", "");
 
       const persona = {
-        cedula: campoCedula.value.trim(),
-        nombre: campoNombre.value.trim(),
-        apellido: campoApellido.value.trim(),
+        cedula: document.getElementById("cedula").value.trim(),
+        nombre: document.getElementById("nombre").value.trim(),
+        apellido: document.getElementById("apellido").value.trim(),
       };
 
-      let error;
-      if (idEditar.value) {
-        mostrar("Actualizando...", "");
-        ({ error } = await db.from("persona").update(persona).eq("id", idEditar.value));
-      } else {
-        mostrar("Guardando...", "");
-        ({ error } = await db.from("persona").insert(persona));
-      }
+      const { error } = await db.from("persona").insert(persona);
 
       if (error) {
         mostrar("No se pudo guardar: " + error.message, "error");
       } else {
-        mostrar(idEditar.value ? "Persona actualizada." : "Persona guardada.", "ok");
-        limpiarFormulario();
+        mostrar("Persona guardada.", "ok");
+        formulario.reset();
+        document.getElementById("cedula").focus();
         cargarPersonas();
       }
       boton.disabled = false;
-    });
-
-    botonCancelar.addEventListener("click", () => {
-      limpiarFormulario();
-      mostrar("", "");
-    });
-
-    cuerpoTabla.addEventListener("click", async (evento) => {
-      const el = evento.target;
-
-      if (el.classList.contains("editar")) {
-        idEditar.value = el.dataset.id;
-        campoCedula.value = el.dataset.cedula;
-        campoNombre.value = el.dataset.nombre;
-        campoApellido.value = el.dataset.apellido;
-        titulo.textContent = "Editar persona";
-        boton.textContent = "Actualizar persona";
-        botonCancelar.style.display = "block";
-        campoCedula.focus();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      if (el.classList.contains("eliminar")) {
-        const id = el.dataset.id;
-        if (!confirm("¿Eliminar esta persona?")) return;
-        el.disabled = true;
-        const { error } = await db.from("persona").delete().eq("id", id);
-        if (error) {
-          mostrar("No se pudo eliminar: " + error.message, "error");
-          el.disabled = false;
-        } else {
-          mostrar("Persona eliminada.", "ok");
-          cargarPersonas();
-        }
-      }
     });
 
     cargarPersonas();
