@@ -63,14 +63,14 @@
       cursor: pointer;
     }
     button:disabled { opacity: .6; cursor: wait; }
-    #formularioLogin button, #formulario button { width: 100%; }
+    #formulario button { width: 100%; }
     .fila-botones { display: flex; gap: 10px; margin-top: 6px; }
     .fila-botones button { flex: 1; }
     #cancelar { background: var(--suave); }
 
-    #mensaje, #mensajeLogin { min-height: 1.4em; margin: 14px 0 0; font-size: .9rem; }
-    #mensaje.ok, #mensajeLogin.ok { color: var(--acento); }
-    #mensaje.error, #mensajeLogin.error { color: var(--error); }
+    #mensaje { min-height: 1.4em; margin: 14px 0 0; font-size: .9rem; }
+    #mensaje.ok { color: var(--acento); }
+    #mensaje.error { color: var(--error); }
 
     table { width: 100%; border-collapse: collapse; font-size: .85rem; }
     th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--borde); }
@@ -83,70 +83,42 @@
     }
     td button.eliminar { background: var(--error); }
     #listaEstado { font-size: .85rem; color: var(--suave); margin-top: 10px; }
-
-    .cabecera-app { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .cabecera-app h1 { margin: 0; }
-    #cerrarSesion { width: auto; background: var(--suave); padding: 8px 14px; font-size: .85rem; }
-
-    .oculto { display: none; }
   </style>
 </head>
 <body>
+  <main>
+    <h1 id="tituloFormulario">Registrar persona</h1>
 
-  <!-- Pantalla de login -->
-  <main id="pantallaLogin">
-    <h1>Iniciar sesión</h1>
-    <form id="formularioLogin">
-      <label>Correo
-        <input id="correo" type="email" required autocomplete="username">
+    <form id="formulario">
+      <input type="hidden" id="idEditar" value="">
+      <label>Cédula
+        <input id="cedula" name="cedula" required autocomplete="off">
       </label>
-      <label>Contraseña
-        <input id="contrasena" type="password" required autocomplete="current-password">
+      <label>Nombre
+        <input id="nombre" name="nombre" required autocomplete="off">
       </label>
-      <button id="botonLogin" type="submit">Entrar</button>
+      <label>Apellido
+        <input id="apellido" name="apellido" required autocomplete="off">
+      </label>
+      <div class="fila-botones">
+        <button id="guardar" type="submit">Guardar persona</button>
+        <button id="cancelar" type="button" style="display:none">Cancelar</button>
+      </div>
     </form>
-    <p id="mensajeLogin" role="status"></p>
+
+    <p id="mensaje" role="status"></p>
   </main>
 
-  <!-- App (oculta hasta iniciar sesión) -->
-  <div id="app" class="oculto" style="width:100%; max-width:480px; display:flex; flex-direction:column; gap:24px; align-items:center;">
-    <main style="max-width:none; width:100%;">
-      <div class="cabecera-app">
-        <h1 id="tituloFormulario">Registrar persona</h1>
-        <button id="cerrarSesion" type="button">Cerrar sesión</button>
-      </div>
-
-      <form id="formulario">
-        <input type="hidden" id="idEditar" value="">
-        <label>Cédula
-          <input id="cedula" name="cedula" required autocomplete="off">
-        </label>
-        <label>Nombre
-          <input id="nombre" name="nombre" required autocomplete="off">
-        </label>
-        <label>Apellido
-          <input id="apellido" name="apellido" required autocomplete="off">
-        </label>
-        <div class="fila-botones">
-          <button id="guardar" type="submit">Guardar persona</button>
-          <button id="cancelar" type="button" style="display:none">Cancelar</button>
-        </div>
-      </form>
-
-      <p id="mensaje" role="status"></p>
-    </main>
-
-    <section style="max-width:none; width:100%;">
-      <h2>Personas guardadas</h2>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Apellido</th><th></th></tr>
-        </thead>
-        <tbody id="cuerpoTabla"></tbody>
-      </table>
-      <p id="listaEstado">Cargando...</p>
-    </section>
-  </div>
+  <section>
+    <h2>Personas guardadas</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Apellido</th><th></th></tr>
+      </thead>
+      <tbody id="cuerpoTabla"></tbody>
+    </table>
+    <p id="listaEstado">Cargando...</p>
+  </section>
 
   <!-- Librería de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -157,15 +129,6 @@
 
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // --- Elementos: login ---
-    const pantallaLogin = document.getElementById("pantallaLogin");
-    const appDiv = document.getElementById("app");
-    const formularioLogin = document.getElementById("formularioLogin");
-    const botonLogin = document.getElementById("botonLogin");
-    const mensajeLogin = document.getElementById("mensajeLogin");
-    const cerrarSesionBtn = document.getElementById("cerrarSesion");
-
-    // --- Elementos: app ---
     const formulario = document.getElementById("formulario");
     const boton = document.getElementById("guardar");
     const botonCancelar = document.getElementById("cancelar");
@@ -178,48 +141,6 @@
     const campoNombre = document.getElementById("nombre");
     const campoApellido = document.getElementById("apellido");
 
-    function mostrarApp(mostrar) {
-      pantallaLogin.classList.toggle("oculto", mostrar);
-      appDiv.classList.toggle("oculto", !mostrar);
-    }
-
-    // --- Login ---
-    formularioLogin.addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      botonLogin.disabled = true;
-      mensajeLogin.textContent = "Iniciando sesión...";
-      mensajeLogin.className = "";
-
-      const { error } = await db.auth.signInWithPassword({
-        email: document.getElementById("correo").value.trim(),
-        password: document.getElementById("contrasena").value,
-      });
-
-      if (error) {
-        mensajeLogin.textContent = "No se pudo iniciar sesión: " + error.message;
-        mensajeLogin.className = "error";
-      } else {
-        mensajeLogin.textContent = "";
-        formularioLogin.reset();
-      }
-      botonLogin.disabled = false;
-    });
-
-    cerrarSesionBtn.addEventListener("click", async () => {
-      await db.auth.signOut();
-    });
-
-    // Reacciona automáticamente a inicios/cierres de sesión
-    db.auth.onAuthStateChange((_evento, sesion) => {
-      if (sesion) {
-        mostrarApp(true);
-        cargarPersonas();
-      } else {
-        mostrarApp(false);
-      }
-    });
-
-    // --- CRUD de personas (igual que antes) ---
     function mostrar(texto, tipo) {
       mensaje.textContent = texto;
       mensaje.className = tipo;
@@ -328,6 +249,8 @@
         }
       }
     });
+
+    cargarPersonas();
   </script>
 </body>
 </html>
