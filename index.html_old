@@ -18,25 +18,22 @@
     body {
       margin: 0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
+      display: grid;
+      place-items: center;
       padding: 24px;
       background: var(--fondo);
       color: var(--texto);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
-    main, section {
+    main {
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       background: var(--tarjeta);
       border: 1px solid var(--borde);
       border-radius: 10px;
       padding: 28px;
     }
     h1 { margin: 0 0 20px; font-size: 1.4rem; }
-    h2 { margin: 0 0 16px; font-size: 1.1rem; }
     label { display: block; margin-bottom: 16px; font-size: .9rem; color: var(--suave); }
     input {
       display: block;
@@ -67,11 +64,6 @@
     #mensaje { min-height: 1.4em; margin: 14px 0 0; font-size: .9rem; }
     #mensaje.ok { color: var(--acento); }
     #mensaje.error { color: var(--error); }
-
-    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--borde); }
-    th { color: var(--suave); font-weight: 600; }
-    #listaEstado { font-size: .85rem; color: var(--suave); margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -94,17 +86,6 @@
     <p id="mensaje" role="status"></p>
   </main>
 
-  <section>
-    <h2>Personas guardadas</h2>
-    <table>
-      <thead>
-        <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Apellido</th></tr>
-      </thead>
-      <tbody id="cuerpoTabla"></tbody>
-    </table>
-    <p id="listaEstado">Cargando...</p>
-  </section>
-
   <!-- Librería de Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -117,36 +98,10 @@
     const formulario = document.getElementById("formulario");
     const boton = document.getElementById("guardar");
     const mensaje = document.getElementById("mensaje");
-    const cuerpoTabla = document.getElementById("cuerpoTabla");
-    const listaEstado = document.getElementById("listaEstado");
 
     function mostrar(texto, tipo) {
       mensaje.textContent = texto;
       mensaje.className = tipo;
-    }
-
-    async function cargarPersonas() {
-      listaEstado.textContent = "Cargando...";
-      const { data, error } = await db
-        .from("persona")
-        .select("*")
-        .order("id", { ascending: false });
-
-      if (error) {
-        listaEstado.textContent = "No se pudo cargar la lista: " + error.message;
-        return;
-      }
-
-      cuerpoTabla.innerHTML = "";
-      data.forEach((p) => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `<td>${p.id}</td><td>${p.cedula}</td><td>${p.nombre}</td><td>${p.apellido}</td>`;
-        cuerpoTabla.appendChild(fila);
-      });
-
-      listaEstado.textContent = data.length
-        ? `${data.length} persona(s) registrada(s).`
-        : "Aún no hay personas registradas.";
     }
 
     formulario.addEventListener("submit", async (evento) => {
@@ -168,12 +123,9 @@
         mostrar("Persona guardada.", "ok");
         formulario.reset();
         document.getElementById("cedula").focus();
-        cargarPersonas();
       }
       boton.disabled = false;
     });
-
-    cargarPersonas();
   </script>
 </body>
 </html>
